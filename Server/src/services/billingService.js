@@ -52,7 +52,8 @@ const postBilling = async (data) => {
 }
 
 const getInventory = async () => {
-	const sql = `SELECT item_id as id,item_quantity FROM item_inventory`;
+	const sql = `SELECT ii.item_id as id,ii.item_quantity,ii.item_price,i.item_name as name FROM item_inventory ii
+							LEFT JOIN items i on i.item_id = ii.item_id`;
 	const [result] = await pool.promise().query(sql);
 	return result;
 }

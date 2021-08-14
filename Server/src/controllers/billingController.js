@@ -12,4 +12,14 @@ async function postBilling(req, res, next) {
 	}
 }
 
-module.exports = { postBilling }
+async function fetchInventory(req, res, next) {
+	try {
+		const data = await billingService.getInventory();
+
+		return res.status(HttpStatus.StatusCodes.OK).json(data);
+	} catch (err) {
+		return res.status(HttpStatus.StatusCodes.BAD_REQUEST).json(err);
+	}
+}
+
+module.exports = { postBilling, fetchInventory }

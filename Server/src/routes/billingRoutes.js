@@ -10,4 +10,6 @@ const { checkInventory } = require('../middleware/checkInventory');
  */
 router.post('/', checkChange, checkInventory, billingController.postBilling);
 
+router.get('/fetchInventory', billingController.fetchInventory);
+
 module.exports = router;

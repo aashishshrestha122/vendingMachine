@@ -2,20 +2,24 @@ const billingService = require('../services/billingService');
 const refundService = require('../services/refundService');
 
 const checkCoins = async (req, res, next) => {
-	var { item_id, return_quantity } = req.body;
+	var { bill_id, return_quantity } = req.body;
 
+	const billing = await refundService.checkBilling(bill_id);
+	if (billing.length) {
 
-	const coin = await billingService.checkCoin();
+		const coin = await billingService.checkCoin();
 
-	const costprice = await refundService.getCostPrice(item_id);
+		const total_price = parseFloat(billing[0].item_price) * parseFloat(return_quantity);
 
-	const total_price = parseFloat(costprice) * parseFloat(return_quantity);
-
-	if (parseFloat(total_price) <= parseFloat(coin)) {
-		req.cost_price = costprice;
-		return next();
+		if (parseFloat(total_price) <= parseFloat(coin)) {
+			req.cost_price = billing[0].item_price;
+			req.item_id = billing[0].id;
+			return next();
+		} else {
+			return next('Not enough coins in the machine for the refund.');
+		}
 	} else {
-		return next('Not enough coins in the machine for the refund.');
+		return next('Invalid Billing Id.');
 	}
 }
 

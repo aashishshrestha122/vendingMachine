@@ -4,10 +4,11 @@ const mysql = require('mysql2');
 const checkCoin = require('./billingService');
 
 const postRefund = async (data) => {
-	const { item_id, return_quantity, bill_id, cost_price, created_by } = data;
+	const { item_id, cost_price, return_quantity, bill_id, created_by } = data;
 
 	return new Promise(async (resolve, reject) => {
 		try {
+
 			var refund_total = parseFloat(return_quantity) * parseFloat(cost_price);
 
 			const refund_sql = `INSERT INTO refund
@@ -42,7 +43,7 @@ const postRefund = async (data) => {
 			var update_billing = `UPDATE billing SET is_refunded = 1 WHERE billing_id = ${bill_id}`;
 
 			const [result] = await pool.promise().query(refund_sql);
-			if (result.insertId) {
+			if (result) {
 
 				const [updateInventory] = await pool.promise().query(update_inventory);
 
@@ -66,4 +67,16 @@ const getCostPrice = async (item_id) => {
 	const [result] = await pool.promise().query(sql);
 	return result[0].cost_price;
 }
-module.exports = { postRefund, getCostPrice }
+
+const checkBilling = async (bill_id) => {
+	var select_query = `SELECT
+															b.billing_id, b.item_id AS id,
+															ii.item_price
+													FROM
+															billing b
+															LEFT JOIN item_inventory ii on ii.item_id = b.item_id
+													WHERE b.billing_id = ${bill_id} and b.is_refunded is null`;
+	const [result] = await pool.promise().query(select_query);
+	return result;
+}
+module.exports = { postRefund, getCostPrice, checkBilling }

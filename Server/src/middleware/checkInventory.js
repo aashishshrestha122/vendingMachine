@@ -5,7 +5,7 @@ const checkInventory = async (req, res, next) => {
 
 	const quantity = await billingService.getInventory();
 
-	const inventoryQuantity = quantity.find(item => item.id === parseFloat(item_id));
+	const inventoryQuantity = quantity.find(item => item.id === parseInt(item_id));
 
 	if (parseFloat(sold_qty) <= parseFloat(inventoryQuantity.item_quantity)) {
 		return next();
