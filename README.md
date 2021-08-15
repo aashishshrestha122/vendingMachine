@@ -6,6 +6,6 @@
 ## cd Server
 ## npm install
 
-##---- for migration
+## ----for migration
 ## setup database.json
 ## db-migrate up
