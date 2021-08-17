@@ -1,5 +1,6 @@
 const pool = require('../db');
 const mysql = require('mysql2');
+const knex = require('../../knex/knex');
 
 const postBilling = async (data) => {
 	const { item_id, item_price, sold_qty, total, created_by, change } = data;
@@ -52,16 +53,30 @@ const postBilling = async (data) => {
 }
 
 const getInventory = async () => {
-	const sql = `SELECT ii.item_id as id,ii.item_quantity,ii.item_price,i.item_name as name FROM item_inventory ii
-							LEFT JOIN items i on i.item_id = ii.item_id`;
-	const [result] = await pool.promise().query(sql);
+	const result = [];
+	await knex.select('ii.item_id as id', 'ii.item_quantity', 'ii.item_price', 'i.item_name as name')
+		.from('item_inventory as ii')
+		.leftJoin('items as i', 'i.item_id', 'ii.item_id')
+		.then(data => {
+			data.forEach(function (value) {
+				result.push(value)
+			});
+		}
+		);
 	return result;
 }
 
 const checkCoin = async () => {
-	const sql = `SELECT total_coins from coins`;
-	const [result] = await pool.promise().query(sql);
-	return result[0].total_coins;
+	const result = [];
+	await knex.select('total_coins')
+		.from('coins')
+		.then(data => {
+			data.forEach(function (value) {
+				result.push(value)
+			});
+		}
+		);
+	return result;
 }
 
 const updateCoins = async (total) => {

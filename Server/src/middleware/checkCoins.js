@@ -11,7 +11,7 @@ const checkCoins = async (req, res, next) => {
 
 		const total_price = parseFloat(billing[0].item_price) * parseFloat(return_quantity);
 
-		if (parseFloat(total_price) <= parseFloat(coin)) {
+		if (parseFloat(total_price) <= parseFloat(coin[0].total_coins)) {
 			req.cost_price = billing[0].item_price;
 			req.item_id = billing[0].id;
 			return next();

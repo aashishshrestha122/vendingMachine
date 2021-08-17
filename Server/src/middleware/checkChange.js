@@ -12,7 +12,7 @@ const checkChange = async (req, res, next) => {
 
 		const coin = await billingService.checkCoin();
 
-		if (coin && change <= coin) {
+		if (coin[0].total_coins && change <= coin[0].total_coins) {
 			req.change = change;
 			return next();
 		} else {
