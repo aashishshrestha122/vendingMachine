@@ -18,7 +18,7 @@ const postRefund = async (data) => {
 			var date = m.getFullYear() + "-" + (m.getMonth() + 1) + "-" + m.getDate() + " " + m.getHours() + ":" + m.getMinutes() + ":" + m.getSeconds();
 
 			return await knex.transaction(async function (t) {
-				return knex("refund")
+				return t("refund")
 					.insert(
 						{
 							'billing_id': bill_id,
@@ -35,13 +35,13 @@ const postRefund = async (data) => {
 
 					.then(async function (response) {
 						if (response.length) {
-							return knex('item_inventory').select('item_quantity').where('item_id', item_id)
+							return t('item_inventory').select('item_quantity').where('item_id', item_id)
 						}
 					})
 					.then(async function (itemQuantity) {
 						if (itemQuantity.length) {
 							const quantity = itemQuantity[0].item_quantity;
-							return knex('item_inventory')
+							return t('item_inventory')
 								.update({
 									'item_quantity': parseInt(quantity) + parseInt(return_quantity)
 								})
@@ -50,7 +50,7 @@ const postRefund = async (data) => {
 					})
 					.then(async function (updateQuantity) {
 						if (updateQuantity) {
-							return knex('coins')
+							return t('coins')
 								.update({
 									'total_coins': coins[0].total_coins - parseInt(refund_total)
 								})
@@ -58,7 +58,7 @@ const postRefund = async (data) => {
 					})
 					.then(async function (updateCoins) {
 						if (updateCoins) {
-							return knex('billing')
+							return t('billing')
 								.update({
 									'is_refunded': 1
 								})
@@ -68,6 +68,8 @@ const postRefund = async (data) => {
 					.then(async function (updateBilling) {
 						if (updateBilling) {
 							return resolve({ return_quantity: return_quantity, return_amount: refund_total });
+						} else {
+							return reject('Oops! Something went wrong while updating billing')
 						}
 					})
 					.then(t.commit)
