@@ -5,44 +5,55 @@ const knex = require('../../knex/knex');
 const postBilling = async (data) => {
 	const { item_id, item_price, sold_qty, total, created_by, change } = data;
 
+	var m = new Date();
+	var date = m.getFullYear() + "-" + (m.getMonth() + 1) + "-" + m.getDate() + " " + m.getHours() + ":" + m.getMinutes() + ":" + m.getSeconds();
+
 	const actualPrice = parseFloat(item_price) * parseInt(sold_qty);
 
 	return new Promise(async (resolve, reject) => {
 		if (parseFloat(total) >= parseFloat(actualPrice)) {
 			try {
-				const update_query = `update item_inventory set item_quantity = item_quantity - ${sold_qty} where item_id = ${item_id}`;
-
-				const query = `INSERT INTO billing
-								(
-									date,
-									item_id,
-									item_price,
-									sold_qty,
-									total,
-									created_by,
-									created_on,
-									updated_by,
-									updated_on
-								)
-								VALUES
-								(
-									NOW(),
-									${mysql.escape(item_id)},
-									${mysql.escape(item_price)},
-									${mysql.escape(parseInt(sold_qty))},
-									${mysql.escape(total)},
-									${mysql.escape(created_by)},
-									NOW(),
-									${mysql.escape(created_by)},
-									NOW()
-								)`;
-				const [result] = await pool.promise().query(query);
-				if (result.insertId) {
-					const [update] = await pool.promise().query(update_query);
-
-					const updatecoin = await updateCoins(actualPrice);
-					return resolve({ amount_received: total, total: actualPrice, change: change });
-				}
+				return await knex.transaction(async function (t) {
+					return knex("billing")
+						.insert(
+							{
+								'date': date,
+								'item_id': item_id,
+								'item_price': item_price,
+								'sold_qty': sold_qty,
+								'total': total,
+								'created_by': created_by,
+								'created_on': date,
+								'updated_by': created_by,
+								'updated_on': date
+							}
+						)
+						.then(async function (response) {
+							if (response.length) {
+								return knex('item_inventory').select('item_quantity').where('item_id', item_id)
+							}
+						})
+						.then(async function (itemQuantity) {
+							if (itemQuantity.length) {
+								const quantity = itemQuantity[0].item_quantity;
+								return knex('item_inventory')
+									.update({
+										'item_quantity': parseInt(quantity) - parseInt(sold_qty)
+									})
+									.where({ 'item_id': item_id })
+							}
+						})
+						.then(async function (updateQuantity) {
+							if (updateQuantity) {
+								const updatecoin = await updateCoins(actualPrice);
+								if (updatecoin) {
+									return resolve({ amount_received: total, total: actualPrice, change: change });
+								}
+							}
+						})
+						.then(t.commit)
+						.catch(t.rollback)
+				})
 			} catch (err) {
 				return reject(err);
 			}
@@ -80,8 +91,15 @@ const checkCoin = async () => {
 }
 
 const updateCoins = async (total) => {
-	const update_coins = `update coins set total_coins = total_coins + ${total}`;
-	const [result] = await pool.promise().query(update_coins);
+	const coins = await checkCoin();
+
+	const result = [];
+	await knex('coins')
+		.update({ 'total_coins': parseFloat(coins[0].total_coins) + parseFloat(total) })
+		.then(data => {
+			result.push(data);
+		}
+		);
 	return result;
 }
 module.exports = { postBilling, getInventory, checkCoin }

@@ -62,6 +62,7 @@ const postRefund = async (data) => {
 								.update({
 									'is_refunded': 1
 								})
+								.where({ 'item_id': item_id })
 						}
 					})
 					.then(async function (updateBilling) {
@@ -87,7 +88,6 @@ const checkBilling = async (bill_id) => {
 		.from('billing as b')
 		.leftJoin('item_inventory as ii', 'ii.item_id', 'b.item_id')
 		.where({ 'b.billing_id': bill_id })
-		.whereNull('b.is_refunded')
 		.then(data => {
 			data.forEach(function (value) {
 				result.push(value)
