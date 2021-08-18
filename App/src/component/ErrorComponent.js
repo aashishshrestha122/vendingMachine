@@ -12,7 +12,7 @@ const ErrorComponent = ({ data }) => {
 						<strong className="me-auto">{data.err ? 'Error Message' : 'Success Message'}</strong>
 					</Toast.Header>
 					<Toast.Body>
-						{data.err ? data.err : `Return Quantity = ${data.return_quantity} Return Amount = ${data.return_amount} `}
+						{data.err ? data.err : ` Return Quantity = ${data.return_quantity} Return Amount = ${data.return_amount} `}
 					</Toast.Body>
 				</Toast>
 				:
@@ -22,7 +22,7 @@ const ErrorComponent = ({ data }) => {
 						<strong className="me-auto">{data.err ? 'Error Message' : 'Success Message'}</strong>
 					</Toast.Header>
 					<Toast.Body>
-						{data.err ? data.err : `Amount Received = ${data.amount_received}	Total = ${data.total} Change = ${data.change}`}</Toast.Body>
+						{data.err ? data.err : `Bill id = ${data.bill_id} Amount Received = ${data.amount_received}	Total = ${data.total} Change = ${data.change}`}</Toast.Body>
 				</Toast>
 			}
 		</Fragment>

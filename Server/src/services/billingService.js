@@ -4,7 +4,6 @@ const knex = require('../../knex/knex');
 
 const postBilling = async (data) => {
 	const { item_id, item_price, sold_qty, total, created_by, change } = data;
-
 	var m = new Date();
 	var date = m.getFullYear() + "-" + (m.getMonth() + 1) + "-" + m.getDate() + " " + m.getHours() + ":" + m.getMinutes() + ":" + m.getSeconds();
 
@@ -13,8 +12,9 @@ const postBilling = async (data) => {
 	return new Promise(async (resolve, reject) => {
 		if (parseFloat(total) >= parseFloat(actualPrice)) {
 			try {
+				var bill_id = null;
 				return await knex.transaction(async function (t) {
-					return knex("billing")
+					return t("billing")
 						.insert(
 							{
 								'date': date,
@@ -28,26 +28,28 @@ const postBilling = async (data) => {
 								'updated_on': date
 							}
 						)
-						.then(async function (response) {
-							if (response.length) {
-								return knex('item_inventory').select('item_quantity').where('item_id', item_id)
+						.then(async function (billing_id) {
+							if (billing_id.length) {
+								bill_id = billing_id[0];
+								return t('item_inventory').select('item_quantity').where('item_id', item_id)
 							}
 						})
 						.then(async function (itemQuantity) {
 							if (itemQuantity.length) {
 								const quantity = itemQuantity[0].item_quantity;
-								return knex('item_inventory')
+								return t('item_inventory')
 									.update({
 										'item_quantity': parseInt(quantity) - parseInt(sold_qty)
 									})
 									.where({ 'item_id': item_id })
 							}
+
 						})
 						.then(async function (updateQuantity) {
 							if (updateQuantity) {
 								const updatecoin = await updateCoins(actualPrice);
 								if (updatecoin) {
-									return resolve({ amount_received: total, total: actualPrice, change: change });
+									return resolve({ bill_id: bill_id, amount_received: total, total: actualPrice, change: change });
 								}
 							}
 						})
