@@ -5,7 +5,7 @@ const checkCoins = async (req, res, next) => {
 	var { bill_id, return_quantity } = req.body;
 
 	const billing = await refundService.checkBilling(bill_id);
-	if (billing.length) {
+	if (billing.length && !billing[0].is_refunded) {
 
 		const coin = await billingService.checkCoin();
 
@@ -19,7 +19,11 @@ const checkCoins = async (req, res, next) => {
 			return next('Not enough coins in the machine for the refund.');
 		}
 	} else {
-		return next('Invalid Billing Id.');
+		if (billing.length && billing[0].is_refunded === 1) {
+			return next('Bill already refunded');
+		} else {
+			return next('Invalid Billing Id.');
+		}
 	}
 }
 

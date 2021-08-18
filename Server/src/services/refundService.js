@@ -85,7 +85,7 @@ const checkBilling = async (bill_id) => {
 	const result = [];
 
 	await knex.select(
-		'b.billing_id', 'b.item_id AS id', 'ii.item_price'
+		'b.billing_id', 'b.item_id AS id', 'ii.item_price', 'b.is_refunded'
 	)
 		.from('billing as b')
 		.leftJoin('item_inventory as ii', 'ii.item_id', 'b.item_id')
