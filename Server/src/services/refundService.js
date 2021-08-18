@@ -17,8 +17,8 @@ const postRefund = async (data) => {
 			var m = new Date();
 			var date = m.getFullYear() + "-" + (m.getMonth() + 1) + "-" + m.getDate() + " " + m.getHours() + ":" + m.getMinutes() + ":" + m.getSeconds();
 
-			return await knex.transaction(async function (t) {
-				return t("refund")
+			await knex.transaction(async function (t) {
+				const insertRefund = await t("refund")
 					.insert(
 						{
 							'billing_id': bill_id,
@@ -33,69 +33,29 @@ const postRefund = async (data) => {
 						}
 					)
 
-					.then(async function (response) {
-						if (response.length) {
-							return t('item_inventory').select('item_quantity').where('item_id', item_id)
-						}
-					})
-					.then(async function (itemQuantity) {
-						if (itemQuantity.length) {
-							const quantity = itemQuantity[0].item_quantity;
-							return t('item_inventory')
-								.update({
-									'item_quantity': parseInt(quantity) + parseInt(return_quantity)
-								})
-								.where({ 'item_id': item_id })
-						}
-					})
-					.then(async function (updateQuantity) {
-						if (updateQuantity) {
-							return t('coins')
-								.update({
-									'total_coins': coins[0].total_coins - parseInt(refund_total)
-								})
-						}
-					})
-					.then(async function (updateCoins) {
-						if (updateCoins) {
-							return t('billing')
-								.update({
-									'is_refunded': 1
-								})
-								.where({ 'item_id': item_id })
-						}
-					})
-					.then(async function (updateBilling) {
-						if (updateBilling) {
-							return resolve({ return_quantity: return_quantity, return_amount: refund_total });
-						} else {
-							return reject('Oops! Something went wrong while updating billing')
-						}
-					})
-					.then(t.commit)
-					.catch(t.rollback)
+				const updateInventory = await t.raw(`UPDATE item_inventory SET item_quantity = item_quantity + ${return_quantity} WHERE item_id = ${item_id}`);
+
+				const updateCoins = await t('coins').update({ 'total_coins': coins.total_coins - parseInt(refund_total) });
+
+				const updateBilling = await t('billing').update({ 'is_refunded': 1 }).where({ 'item_id': item_id });
+
+				return resolve({ return_quantity: return_quantity, return_amount: refund_total });
 			})
 		} catch (err) {
-			return reject(err);
+			return reject(err.code);
 		}
 	})
 }
 
 const checkBilling = async (bill_id) => {
-	const result = [];
 
-	await knex.select(
+	const [result] = await knex.select(
 		'b.billing_id', 'b.item_id AS id', 'ii.item_price', 'b.is_refunded'
 	)
 		.from('billing as b')
 		.leftJoin('item_inventory as ii', 'ii.item_id', 'b.item_id')
 		.where({ 'b.billing_id': bill_id })
-		.then(data => {
-			data.forEach(function (value) {
-				result.push(value)
-			});
-		}
-		);
+
 	return result;
 
 }

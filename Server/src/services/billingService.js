@@ -13,8 +13,8 @@ const postBilling = async (data) => {
 		if (parseFloat(total) >= parseFloat(actualPrice)) {
 			try {
 				var bill_id = null;
-				return await knex.transaction(async function (t) {
-					return t("billing")
+				await knex.transaction(async function (t) {
+					const insertBilling = await t("billing")
 						.insert(
 							{
 								'date': date,
@@ -28,36 +28,16 @@ const postBilling = async (data) => {
 								'updated_on': date
 							}
 						)
-						.then(async function (billing_id) {
-							if (billing_id.length) {
-								bill_id = billing_id[0];
-								return t('item_inventory').select('item_quantity').where('item_id', item_id)
-							}
-						})
-						.then(async function (itemQuantity) {
-							if (itemQuantity.length) {
-								const quantity = itemQuantity[0].item_quantity;
-								return t('item_inventory')
-									.update({
-										'item_quantity': parseInt(quantity) - parseInt(sold_qty)
-									})
-									.where({ 'item_id': item_id })
-							}
 
-						})
-						.then(async function (updateQuantity) {
-							if (updateQuantity) {
-								const updatecoin = await updateCoins(actualPrice);
-								if (updatecoin) {
-									return resolve({ bill_id: bill_id, amount_received: total, total: actualPrice, change: change });
-								}
-							}
-						})
-						.then(t.commit)
-						.catch(t.rollback)
+					bill_id = insertBilling[0];
+					const updateInventory = await t.raw(`UPDATE item_inventory SET item_quantity = item_quantity - ${sold_qty} WHERE item_id = ${item_id}`);
+
+					const updatecoin = await updateCoins(actualPrice);
+
+					return resolve({ bill_id: bill_id, amount_received: total, total: actualPrice, change: change });
 				})
 			} catch (err) {
-				return reject(err);
+				return reject(err.message);
 			}
 		} else {
 			return reject("Paid amount doesn't match with total amount");
@@ -66,42 +46,24 @@ const postBilling = async (data) => {
 }
 
 const getInventory = async () => {
-	const result = [];
-	await knex.select('ii.item_id as id', 'ii.item_quantity', 'ii.item_price', 'i.item_name as name')
+	const result = await knex.select('ii.item_id as id', 'ii.item_quantity', 'ii.item_price', 'i.item_name as name')
 		.from('item_inventory as ii')
 		.leftJoin('items as i', 'i.item_id', 'ii.item_id')
-		.then(data => {
-			data.forEach(function (value) {
-				result.push(value)
-			});
-		}
-		);
+
 	return result;
 }
 
 const checkCoin = async () => {
-	const result = [];
-	await knex.select('total_coins')
-		.from('coins')
-		.then(data => {
-			data.forEach(function (value) {
-				result.push(value)
-			});
-		}
-		);
+	const [result] = await knex.select('total_coins').from('coins')
+
 	return result;
 }
 
 const updateCoins = async (total) => {
 	const coins = await checkCoin();
 
-	const result = [];
-	await knex('coins')
-		.update({ 'total_coins': parseFloat(coins[0].total_coins) + parseFloat(total) })
-		.then(data => {
-			result.push(data);
-		}
-		);
+	const result = await knex('coins').update({ 'total_coins': parseFloat(coins.total_coins) + parseFloat(total) })
+
 	return result;
 }
 module.exports = { postBilling, getInventory, checkCoin }
