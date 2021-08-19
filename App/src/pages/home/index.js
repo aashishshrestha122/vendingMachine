@@ -80,22 +80,36 @@ const Home = () => {
 	const handleBuy = async () => {
 		const { id, item_price } = selectedItem;
 		const payload = { item_id: id, item_price, sold_qty: 1, total: values.loadAmount, created_by: 1 }
-		const { data } = await http.post('/billing/', payload);
-		if (data) {
+		try {
+			const { data } = await http.post('/billing/', payload);
+			if (data) {
+				setShowErr(true);
+				handleClose();
+				setResMessage(data);
+				setInterval(() => window.location.reload(), 1000);
+			}
+		} catch (err) {
 			setShowErr(true);
 			handleClose();
-			setResMessage(data);
+			setResMessage({ err: err.message });
 			setInterval(() => window.location.reload(), 1000);
 		}
 	}
 
 	const handleReturn = async () => {
 		const payload = { return_quantity: 1, bill_id: values.billId, created_by: 1 }
-		const { data } = await http.post('/refund/', payload);
-		if (data) {
+		try {
+			const { data } = await http.post('/refund/', payload);
+			if (data) {
+				setShowErr(true);
+				setInterval(() => window.location.reload(), 1000);
+				setResMessage(data);
+			}
+		} catch (err) {
 			setShowErr(true);
+			handleClose();
+			setResMessage({ err: err.message });
 			setInterval(() => window.location.reload(), 1000);
-			setResMessage(data);
 		}
 	}
 

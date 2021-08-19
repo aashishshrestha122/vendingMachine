@@ -4,7 +4,7 @@
   "description": "Vending machine server",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon --watch index",
+    "start": "nodemon index",
     "test": "jest"
   },
   "author": "Aashish",

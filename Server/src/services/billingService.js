@@ -37,7 +37,7 @@ const postBilling = async (data) => {
 					return resolve({ bill_id: bill_id, amount_received: total, total: actualPrice, change: change });
 				})
 			} catch (err) {
-				return reject(err.message);
+				return reject(err.code);
 			}
 		} else {
 			return reject("Paid amount doesn't match with total amount");
