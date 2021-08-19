@@ -37,7 +37,7 @@ const postRefund = async (data) => {
 
 				const updateCoins = await t('coins').update({ 'total_coins': coins.total_coins - parseInt(refund_total) });
 
-				const updateBilling = await t('billing').update({ 'is_refunded': 1 }).where({ 'item_id': item_id });
+				const updateBilling = await t('billing').update({ 'is_refunded': 1 }).where({ 'billing_id': bill_id });
 
 				return resolve({ return_quantity: return_quantity, return_amount: refund_total });
 			})
